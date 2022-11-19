@@ -44,7 +44,7 @@ CREATE TABLE venues (
     name varchar(255),
     street_address text,
     type char(7) CHECK (type in ('public', 'private')) DEFAULT 'public',
-    varchar(9),
+    postal_code varchar(9),
     country_code char(2),
     FOREIGN KEY (country_code, postal_code)
     REFERENCES cities (country_code, postal_code) MATCH FULL
@@ -93,6 +93,17 @@ ON events USING hash (title);
 SELECT *
 FROM events
 WHERE starts >= '2018-04-01';
-\diu
+
 CREATE INDEX events_starts
 ON events USING btree (starts);
+
+SELECT e.title, c.country_name
+FROM events e
+INNER JOIN venues v
+ON e.venue_id = v.venue_id
+INNER JOIN countries c
+ON v.country_code = c.country_code
+WHERE e.title = 'Fight Club';
+
+ALTER TABLE venues
+ADD COLUMN active boolean DEFAULT TRUE;

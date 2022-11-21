@@ -192,10 +192,3 @@ SELECT * FROM crosstab(
     jan int, feb int, mar int, apr int, may int, jun int,
     jul int, aug int, sep int, oct int, nov int, dec int
 ) ORDER BY year;
-
-;
-
-
-
-
-

@@ -72,3 +72,165 @@ db.towns.find({
 }, {
     _id :0, name : 1, population: 1
 })
+
+// nested lookup 
+db.towns.find(
+    {famousFor: 'food'},
+    {_id: 0, name: 1, famousFor: 1}
+)
+
+db.towns.find(
+    { famousFor: /moma/},
+    { _id: 0, name: 1, famousFor: 1}
+)
+
+db.towns.find(
+    { famousFor: { $all : ['food', 'beer']}},
+    { _id: 0, name: 1, famousFor: 1}
+)
+
+db.towns.find(
+    { famousFor: { $nin : ['food', 'beer']}},
+    { _id: 0, name: 1, famousFor: 1}
+)
+
+// look up nested property
+db.towns.find(
+    { 'mayor.party' : 'D'},
+    { _id: 0, name : 1, mayor : 1}
+)
+
+db.towns.find(
+    { 'mayor.party' : { $exists : false}},
+    { _id: 0, name : 1, mayor : 1}
+)
+
+
+db.countries.insert({
+    _id: "us",
+    name: "United States",
+    exports : {
+        foods : [
+            { name : "bacon", tasty : true},
+            { name : "burgers"}
+        ]
+    }
+})
+db.countries.insert({
+    _id: "ca",
+    name: "Canada",
+    exports : {
+        foods : [
+            { name : "bacon", tasty : false},
+            { name : "syrup", tasty : true}
+        ]
+    }
+})
+db.countries.insert({
+    _id: "mx",
+    name: "Mexico",
+    exports : {
+        foods : [
+            { name : "salsa", tasty : true, condiment: true},
+        ]
+    }
+})
+
+db.countries.find(
+    { 'exports.foods.name': 'bacon', 'exports.foods.tasty': true}
+)
+
+// queries with elemMatch
+db.countries.find(
+    {
+        'exports.foods' : {
+            $elemMatch : {
+                name : 'bacon',
+                tasty : true
+            }
+        }
+    }
+)
+
+db.countries.find(
+    {
+        'exports.foods' : {
+            $elemMatch : {
+                tasty : true,
+                condiment : { $exists : true}
+            }
+        }
+    }
+)
+
+// Boolean ops
+
+db.countries.find(
+    { _id : "mx", name : "United States"},
+    { _id : 1}
+)
+
+db.countries.find(
+    { 
+        $or : [
+            { _id : "mx"},
+            { name : "United States"}
+        ]
+    },
+    { _id : 1}
+)
+
+db.towns.update(
+    { _id : ObjectId("638244c87327643b963404c1")},
+    { $set : { state: "OR"}}
+)
+
+db.towns.update(
+    { _id : ObjectId("638244c87327643b963404c1")},
+    { $inc : { population: 1000}}
+)
+
+db.towns.findOne({ _id : ObjectId("638244c87327643b963404c1")})
+
+// References
+db.towns.update(
+    { _id : ObjectId("638244c87327643b963404c1")},
+    { $set : {
+        country: { $ref: "countries", $id : "us"}
+    }
+    }
+)
+
+var portland = db.towns.findOne(
+    { _id : ObjectId("638244c87327643b963404c1")}
+);
+
+db.countries.findOne({ _id : portland.country.oid})
+
+// Deleting
+
+var badBacon = {
+    'exports.foods': {
+        $elemMatch: {
+            name : 'bacon',
+            tasty : false
+        }
+    }
+}
+db.countries.find(badBacon)
+
+db.countries.remove(badBacon)
+
+db.countries.countDocuments()
+
+// Custom JS functions
+
+db.towns.find({
+    $where : "this.population > 6000 && this.population < 600000",
+    famousFor: /Phil/
+})
+
+// Exercises
+
+db.towns.find({ name : { $regex : /new/i }})
+

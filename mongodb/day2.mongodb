@@ -1,0 +1,57 @@
+// Fun with indexes
+
+populatePhones = function(area, start, stop) {
+    for(var i = start; i < stop; i++) {
+        var country = 1 + ((Math.random() * 8) << 0) // seems to round
+        var num = (country * 1e10) + (area * 1e7) + i;
+        var fullNumber = "+" + country + " " + area + "-" + i;
+
+        db.phones.insert({
+            _id: num,
+            components: {
+                country: country,
+                area: area,
+                prefix: (i * 1e-4) << 0,
+                number: i
+            },
+            display: fullNumber
+        });
+        print("Inserted number " + fullNumber);
+    }
+    print("Done!");
+}
+
+populatePhones(800, 5550000, 5560000)
+
+db.phones.find().limit(2)
+
+db.getCollectionNames().forEach(
+    function (collection) {
+        print("Indexes for the " + collection + " collection:");
+        printjson(db[collection].getIndexes());
+    }
+);
+
+db.phones.find(
+    {display: "+3 800-5550001"}
+).explain("executionStats").executionStats
+
+// add b-tree index to display number
+db.phones.ensureIndex(
+    { display: 1},
+    { unique: true, dropDups: true}
+)
+
+db.setProfilingLevel(2)
+
+db.phones.find({display: "+3 800-5550001"})
+
+db.system.profile.find()
+db.system.profile.find()[0].execStats  // how to array
+
+db.phones.ensureIndex(
+    {"components.area": 1},
+    {background: 1}
+)
+
+db.phones.getIndexes()

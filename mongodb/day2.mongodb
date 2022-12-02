@@ -55,3 +55,116 @@ db.phones.ensureIndex(
 )
 
 db.phones.getIndexes()
+
+
+// Fun with aggregations
+
+db.phones.countDocuments({"components.number": {$gt : 5550050}})
+
+db.phones.distinct(
+    "components.number",
+    {"components.number": { $lt: 5550005}}
+)
+
+// agg can combine where, groupby, order by ops
+// ...load cities data via python
+
+use("7dbs")
+
+db.cities.aggregate([
+    {
+        $match: {
+            "timezone": {
+                $eq: "Europe/London"
+            }
+        }
+    },
+    {
+        $group: {
+            _id: "averagePopulation",
+            avgPop: {
+                $avg: "$population"
+            }
+        }
+    }
+])
+
+db.cities.aggregate([
+    {
+        $match: {
+            "timezone": {
+                $eq: "Europe/London"
+            }
+        }
+    },
+    {
+        $sort: {
+            population: -1
+        }
+    },
+    {
+        $project: {
+            _id: 0,
+            name: 1,
+            population: 1
+        }
+    }
+])
+
+// Server side commands
+
+db.runCommand({"find": "someCollection"})
+
+// Mapreduce & finalise
+
+// Map -> filtering, sorting
+// Reduce -> operation on subset
+
+
+distinctDigits = function(phone) {
+    var number = phone.components.number + '',
+        seen = [], 
+        result = [], 
+        i = number.length;
+
+    while(i--) {
+        seen[+number[i]] = 1;
+    }
+
+    for (var i = 0; i < 10; i++) {
+        if (seen[i]) {
+            result[result.length] = i;
+        }
+    }
+    return result;
+}
+db.system.js.insertOne(
+    {_id: "distinctDigits", value: distinctDigits}
+)
+db.system.js.find({_id: "distinctDigits"})
+
+
+map = function() {
+    var digits = distinctDigits(this);
+    emit({
+        digits: digits,
+        country: this.components.country
+    },
+    {
+        count: 1
+    });
+}
+reduce = function(key, values) {
+    var total = 0;
+    for (var i = 0; i < values.length; i++) {
+        total += values[i].count;
+    }
+    return { count: total };
+}
+
+results = db.runCommand({
+    mapReduce: "phones",
+    map: map,
+    reduce: reduce,
+    out: "phones.report"
+})

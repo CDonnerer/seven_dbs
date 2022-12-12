@@ -1,0 +1,17 @@
+rs.initiate({
+    _id: "book",
+    members: [
+        {_id: 0, host: "mongo1:27017"},
+        {_id: 1, host: "mongo2:27017"},
+        {_id: 2, host: "mongo3:27017"},
+    ]
+})
+
+// NB: switch to primary node
+
+db.echo.insert({say : "HELLO!"})
+
+
+// On secondary node read/write will fail
+
+db.echo.insert({say : "is this thing on?"})
